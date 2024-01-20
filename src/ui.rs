@@ -1,35 +1,10 @@
+use crate::constants::obtener_nombre_lenguaje;
+use crate::file::Archivo;
+use ncurses::*;
 use std::{fs, os::unix::fs::PermissionsExt};
 
-use crate::file::Archivo;
-
-use ncurses::*;
-
-#[derive(Debug)]
-enum Lenguaje {
-    Rust,
-    Elixir,
-    C,
-    Cpp,
-    JavaScript,
-    TypeScript,
-    Java,
-    Lua,
-    Python,
-    Txt,
-    Markdown,
-    Jsx,
-    Assembly,
-    Haskell,
-    OCaml,
-    Clojure,
-    Go,
-    Css,
-    Html,
-    Bash,
-    Php,
-    Ruby,
-    Undefined,
-}
+const START_X: i32 = 5; // x=0 in the editor
+const START_Y: i32 = 1; // y=0 in the editor
 
 #[derive(Debug)]
 pub struct State {
@@ -69,8 +44,8 @@ impl State {
             w,
             h,
             win,
-            x: 5,
-            y: 1,
+            x: START_X,
+            y: START_Y,
             mode: false,
             idx_x: 0,
             idx_y: 0,
@@ -80,7 +55,7 @@ impl State {
     }
 
     pub fn display(&self) {
-        wclear(self.win);
+        //wclear(self.win);
         //box_(self.win, 0, 0);
 
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
@@ -119,7 +94,7 @@ impl State {
             wattron(self.win, COLOR_PAIR(3));
             mvwprintw(self.win, (_idx + 1) as i32, 1, &i.to_string());
             wattroff(self.win, COLOR_PAIR(3));
-            mvwprintw(self.win, (_idx + 1) as i32, 5, &format);
+            mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
         }
 
         /*
@@ -182,18 +157,26 @@ impl State {
         while ch != 113 {
             self.mode = false;
             match ch {
+                //d
+                100 => {
+                    ch = wgetch(self.win);
+                    if ch == 100 {
+                        self.archivo.buffer.remove(self.idx_y);
+                        wclear(self.win);
+                    }
+                }
                 //J
                 106 => {
                     if self.y <= self.h - 7 && self.y < self.archivo.buffer.len() as i32 {
                         self.y += 1;
                         self.idx_y += 1;
-                    } else if self.start <= self.h + 9 {
+                    } else if self.start >= self.h + 9 {
                         self.start += 1;
                     }
                 }
                 //K
                 107 => {
-                    if self.y > 1 {
+                    if self.y > START_Y {
                         self.y -= 1;
                         self.idx_y -= 1;
                     } else if self.start > 0 {
@@ -202,7 +185,7 @@ impl State {
                 }
                 //H
                 104 => {
-                    if self.x > 6 {
+                    if self.x > START_X {
                         self.x -= 1;
                         self.idx_x -= 1;
                     }
@@ -214,6 +197,16 @@ impl State {
                         self.idx_x += 1;
                     }
                 }
+                KEY_ENTER | 10 => {
+                    self.archivo
+                        .buffer
+                        .insert(self.idx_y + 1, Vec::<char>::new());
+                    self.idx_y += 1;
+                    self.idx_x = 0;
+                    self.x = START_X;
+                    self.y += 1;
+                    wclear(self.win);
+                }
                 //g
                 103 => {
                     self.archivo.save();
@@ -223,7 +216,7 @@ impl State {
                     self.mode = !self.mode;
                     ch = wgetch(self.win);
                     let mut ty: char;
-                    while ch != 97 {
+                    while ch != 27 {
                         ty = ch as u8 as char;
                         match ch {
                             KEY_BACKSPACE => {
@@ -239,10 +232,16 @@ impl State {
                                     //wmove(self.win, self.y, self.x);
                                 }
                                 //self.x -= 1;
+                                self.display();
                             }
-                            KEY_ENTER => {
-                                self.y -= 1;
-                                self.idx_y -= 1;
+                            KEY_ENTER | 10 => {
+                                self.archivo.buffer.push(Vec::<char>::new());
+                                self.y += 1;
+                                self.idx_y += 1;
+                                self.x = START_X;
+                                self.idx_x = 0;
+                                wclear(self.win);
+                                self.display();
                             }
                             _ => {
                                 if self.idx_x > self.archivo.buffer[self.idx_y].len() {
@@ -252,9 +251,10 @@ impl State {
                                 }
                                 self.x += 1;
                                 self.idx_x += 1;
+                                self.display();
                             }
                         }
-                        self.display();
+                        wrefresh(self.win);
                         ch = wgetch(self.win);
                     }
                 }
@@ -300,32 +300,4 @@ pub fn format_permissions(permissions: fs::Permissions, is_directory: bool) -> S
         other_write,
         other_execute
     )
-}
-
-fn obtener_nombre_lenguaje(codigo: &str) -> Option<Lenguaje> {
-    match codigo.to_lowercase().as_str() {
-        "rs" => Some(Lenguaje::Rust),
-        "ex" | "exs" => Some(Lenguaje::Elixir),
-        "c" | "h" => Some(Lenguaje::C),
-        "cpp" | "c++" | "hpp" => Some(Lenguaje::Cpp),
-        "js" => Some(Lenguaje::JavaScript),
-        "ts" => Some(Lenguaje::TypeScript),
-        "java" => Some(Lenguaje::Java),
-        "lua" => Some(Lenguaje::Lua),
-        "py" => Some(Lenguaje::Python),
-        "txt" => Some(Lenguaje::Txt),
-        "md" | "mdx" => Some(Lenguaje::Markdown),
-        "jsx" | "tsx" => Some(Lenguaje::Jsx),
-        "s" | "asm" | "nasm" => Some(Lenguaje::Assembly),
-        "hs" => Some(Lenguaje::Haskell),
-        "ml" => Some(Lenguaje::OCaml),
-        "cjl" => Some(Lenguaje::Clojure),
-        "go" => Some(Lenguaje::Go),
-        "css" => Some(Lenguaje::Css),
-        "html" => Some(Lenguaje::Html),
-        "sh" => Some(Lenguaje::Bash),
-        "php" => Some(Lenguaje::Php),
-        "rb" => Some(Lenguaje::Ruby),
-        _ => Some(Lenguaje::Undefined),
-    }
 }

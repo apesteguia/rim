@@ -150,6 +150,41 @@ impl State {
         wrefresh(self.win);
     }
 
+    pub fn display_bar(&self) {
+        let metadata = self.archivo.file.metadata().unwrap();
+        let per = format_permissions(metadata.permissions(), false);
+
+        let file = self.archivo.path.split('/').last().unwrap();
+        let lenguaje = file.split('.').last().unwrap();
+        let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
+
+        let format = format!(
+            "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
+            lang,
+            per,
+            metadata.len(),
+            self.y,
+            self.archivo.buffer.len(),
+            self.x,
+            self.y,
+            self.idx_x,
+            self.idx_y,
+        );
+
+        let x = getmaxx(self.win);
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+        mvwhline(self.win, self.h - 3, 1, 32, x - 2);
+        if !self.mode {
+            mvwprintw(self.win, self.h - 3, 2, "NORMAL");
+        } else {
+            mvwprintw(self.win, self.h - 3, 2, "INSERT");
+        }
+        mvwprintw(self.win, self.h - 3, 10, &format);
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+        wmove(self.win, self.y, self.x);
+        wrefresh(self.win);
+    }
+
     pub fn update(&mut self) {
         keypad(self.win, true);
 
@@ -211,51 +246,66 @@ impl State {
                 103 => {
                     self.archivo.save();
                 }
-                //insert
+                //insert i
                 105 => {
-                    self.mode = !self.mode;
+                    self.mode = true;
+                    self.display_bar();
                     ch = wgetch(self.win);
                     let mut ty: char;
-                    while ch != 27 {
-                        ty = ch as u8 as char;
-                        match ch {
-                            KEY_BACKSPACE => {
-                                if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
-                                    self.archivo.buffer[self.idx_y].pop();
-                                    wmove(
-                                        self.win,
-                                        self.y,
-                                        self.archivo.buffer[self.idx_y].len() as i32,
-                                    );
-                                } else {
-                                    self.archivo.buffer[self.idx_y].remove(self.idx_x);
-                                    //wmove(self.win, self.y, self.x);
+                    if ch == 27 {
+                        self.mode = false;
+                        self.display_bar();
+                    } else {
+                        loop {
+                            ty = ch as u8 as char;
+                            match ch {
+                                KEY_BACKSPACE => {
+                                    if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
+                                        self.archivo.buffer[self.idx_y].pop();
+                                        wmove(
+                                            self.win,
+                                            self.y,
+                                            self.archivo.buffer[self.idx_y].len() as i32,
+                                        );
+                                    } else {
+                                        self.archivo.buffer[self.idx_y].remove(self.idx_x);
+                                        //wmove(self.win, self.y, self.x);
+                                    }
+                                    //self.x -= 1;
+                                    self.display();
                                 }
-                                //self.x -= 1;
-                                self.display();
-                            }
-                            KEY_ENTER | 10 => {
-                                self.archivo.buffer.push(Vec::<char>::new());
-                                self.y += 1;
-                                self.idx_y += 1;
-                                self.x = START_X;
-                                self.idx_x = 0;
-                                wclear(self.win);
-                                self.display();
-                            }
-                            _ => {
-                                if self.idx_x > self.archivo.buffer[self.idx_y].len() {
-                                    self.archivo.buffer[self.idx_y].push(ty);
-                                } else {
-                                    self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                                KEY_ENTER | 10 => {
+                                    self.archivo.buffer.push(Vec::<char>::new());
+                                    self.y += 1;
+                                    self.idx_y += 1;
+                                    self.x = START_X;
+                                    self.idx_x = 0;
+                                    wclear(self.win);
+                                    self.display();
                                 }
-                                self.x += 1;
-                                self.idx_x += 1;
-                                self.display();
+                                27 => {
+                                    self.mode = false;
+                                    self.display_bar();
+                                }
+                                _ => {
+                                    if self.idx_x > self.archivo.buffer[self.idx_y].len() {
+                                        self.archivo.buffer[self.idx_y].push(ty);
+                                    } else {
+                                        self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                                    }
+                                    self.x += 1;
+                                    self.idx_x += 1;
+                                    self.display();
+                                }
+                            }
+                            if ch != 27 {
+                                wrefresh(self.win);
+                                ch = wgetch(self.win);
+                            } else {
+                                self.display_bar();
+                                break;
                             }
                         }
-                        wrefresh(self.win);
-                        ch = wgetch(self.win);
                     }
                 }
                 _ => {

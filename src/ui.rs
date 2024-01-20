@@ -14,6 +14,8 @@ pub struct State {
     pub mode: bool,
     pub idx_x: usize,
     pub idx_y: usize,
+    pub start: i32,
+    pub end: i32,
 }
 
 impl State {
@@ -28,6 +30,7 @@ impl State {
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
+        let end = h - 5;
 
         let win = newwin(h, w, 0, 0);
 
@@ -41,6 +44,8 @@ impl State {
             mode: false,
             idx_x: 0,
             idx_y: 0,
+            start: 0,
+            end,
         }
     }
 
@@ -50,19 +55,47 @@ impl State {
 
         mvwprintw(self.win, 0, 1, &self.archivo.path);
 
+        for (_idx, i) in (self.start..self.end + self.start).enumerate() {
+            let format = if i < 10 {
+                format!(
+                    " {}  | {}",
+                    i,
+                    self.archivo.buffer[i as usize]
+                        .iter()
+                        .cloned()
+                        .collect::<String>()
+                )
+            } else {
+                format!(
+                    "{}  | {}",
+                    i,
+                    self.archivo.buffer[i as usize]
+                        .iter()
+                        .cloned()
+                        .collect::<String>()
+                )
+            };
+
+            mvwprintw(self.win, (_idx + 1) as i32, 1, &format);
+        }
+
+        /*
         for (i, f) in self.archivo.buffer.iter().enumerate() {
             if i as i32 >= self.h - 5 {
                 break;
             }
 
-            let format = if i < 10 {
-                format!(" {} | {}", i, f.iter().cloned().collect::<String>())
-            } else {
-                format!("{} | {}", i, f.iter().cloned().collect::<String>())
-            };
+            if i as i32 <= self.start {
+                let format = if i < 10 {
+                    format!(" {} | {}", i, f.iter().cloned().collect::<String>())
+                } else {
+                    format!("{} | {}", i, f.iter().cloned().collect::<String>())
+                };
 
-            mvwprintw(self.win, (i + 1) as i32, 1, &format);
+                mvwprintw(self.win, (i + 1) as i32, 1, &format);
+            }
         }
+        */
 
         let metadata = self.archivo.file.metadata().unwrap();
         let per = format_permissions(metadata.permissions(), false);
@@ -96,6 +129,8 @@ impl State {
                     if self.y <= self.h - 7 {
                         self.y += 1;
                         self.idx_y += 1;
+                    } else {
+                        self.start += 1;
                     }
                 }
                 //K
@@ -103,6 +138,8 @@ impl State {
                     if self.y > 1 {
                         self.y -= 1;
                         self.idx_y -= 1;
+                    } else {
+                        self.start -= 1;
                     }
                 }
                 //H
@@ -143,6 +180,10 @@ impl State {
                                     //wmove(self.win, self.y, self.x);
                                 }
                                 //self.x -= 1;
+                            }
+                            KEY_ENTER => {
+                                self.y -= 1;
+                                self.idx_y -= 1;
                             }
                             _ => {
                                 if self.idx_x > self.archivo.buffer[self.idx_y].len() {

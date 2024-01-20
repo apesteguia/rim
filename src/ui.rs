@@ -126,25 +126,35 @@ impl State {
                 //insert
                 105 => {
                     ch = wgetch(self.win);
-                    let mut ty = ch as u8 as char;
+                    let mut ty: char;
                     while ch != 97 {
                         ty = ch as u8 as char;
                         match ch {
                             KEY_BACKSPACE => {
-                                self.x -= 1;
-                                mvwprintw(self.win, self.y, self.x, " ");
+                                if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
+                                    self.archivo.buffer[self.idx_y].pop();
+                                    wmove(
+                                        self.win,
+                                        self.y,
+                                        self.archivo.buffer[self.idx_y].len() as i32,
+                                    );
+                                } else {
+                                    self.archivo.buffer[self.idx_y].remove(self.idx_x);
+                                    //wmove(self.win, self.y, self.x);
+                                }
+                                //self.x -= 1;
                             }
                             _ => {
                                 if self.idx_x > self.archivo.buffer[self.idx_y].len() {
                                     self.archivo.buffer[self.idx_y].push(ty);
                                 } else {
-                                    self.archivo.buffer[self.idx_x].insert(self.idx_y, ty);
+                                    self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
                                 }
                                 self.x += 1;
                                 self.idx_x += 1;
-                                mvwprintw(self.win, self.y, self.x, &ty.to_string());
                             }
                         }
+                        self.display();
                         ch = wgetch(self.win);
                     }
                 }

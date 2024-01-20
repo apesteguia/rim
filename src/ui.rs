@@ -17,7 +17,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(path: &str, size: usize) -> State {
+    pub fn new(path: &str) -> State {
         initscr();
         noecho();
         keypad(stdscr(), true);
@@ -32,7 +32,7 @@ impl State {
         let win = newwin(h, w, 0, 0);
 
         State {
-            archivo: Archivo::new(path, size),
+            archivo: Archivo::new(path),
             w,
             h,
             win,

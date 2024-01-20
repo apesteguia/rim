@@ -226,7 +226,7 @@ impl State {
                         self.y -= 1;
                         self.idx_y -= 1;
                         self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
-                        self.idx_x = self.archivo.buffer.len();
+                        self.idx_x = self.archivo.buffer[self.idx_y].len();
                     } else if self.start > 0 {
                         self.start -= 1;
                         self.idx_y -= 1;

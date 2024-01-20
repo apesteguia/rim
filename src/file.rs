@@ -1,6 +1,6 @@
 use std::fs;
-use std::io::{Result, Write};
 
+#[derive(Debug)]
 pub struct Archivo {
     pub path: String,
     pub file: fs::File,

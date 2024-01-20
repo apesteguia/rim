@@ -4,6 +4,24 @@ use crate::file::Archivo;
 
 use ncurses::*;
 
+#[derive(Debug)]
+enum Lenguaje {
+    Rust,
+    Elixir,
+    C,
+    Cpp,
+    JavaScript,
+    TypeScript,
+    Java,
+    Lua,
+    Python,
+    Txt,
+    Markdown,
+    Jsx,
+    Undefined,
+}
+
+#[derive(Debug)]
 pub struct State {
     pub archivo: Archivo,
     pub w: i32,
@@ -26,7 +44,9 @@ impl State {
         raw();
         start_color();
         cbreak();
-        init_pair(1, COLOR_BLUE, COLOR_WHITE);
+        init_pair(1, COLOR_BLACK, COLOR_WHITE);
+        init_pair(2, COLOR_BLACK, COLOR_BLUE);
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
@@ -39,7 +59,7 @@ impl State {
             w,
             h,
             win,
-            x: 6,
+            x: 5,
             y: 1,
             mode: false,
             idx_x: 0,
@@ -51,32 +71,45 @@ impl State {
 
     pub fn display(&self) {
         wclear(self.win);
-        box_(self.win, 0, 0);
+        //box_(self.win, 0, 0);
 
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwprintw(self.win, 0, 1, &self.archivo.path);
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
 
         for (_idx, i) in (self.start..self.end + self.start).enumerate() {
+            if i > (self.archivo.buffer.len() - 1) as i32 {
+                break;
+            }
+
             let format = if i < 10 {
                 format!(
-                    " {}  | {}",
-                    i,
+                    "{}  ",
+                    self.archivo.buffer[i as usize]
+                        .iter()
+                        .cloned()
+                        .collect::<String>()
+                )
+            } else if i < 100 {
+                format!(
+                    "{} ",
                     self.archivo.buffer[i as usize]
                         .iter()
                         .cloned()
                         .collect::<String>()
                 )
             } else {
-                format!(
-                    "{}  | {}",
-                    i,
-                    self.archivo.buffer[i as usize]
-                        .iter()
-                        .cloned()
-                        .collect::<String>()
-                )
+                self.archivo.buffer[i as usize]
+                    .iter()
+                    .cloned()
+                    .collect::<String>()
+                    .to_string()
             };
 
-            mvwprintw(self.win, (_idx + 1) as i32, 1, &format);
+            wattron(self.win, COLOR_PAIR(3));
+            mvwprintw(self.win, (_idx + 1) as i32, 1, &i.to_string());
+            wattroff(self.win, COLOR_PAIR(3));
+            mvwprintw(self.win, (_idx + 1) as i32, 5, &format);
         }
 
         /*
@@ -100,19 +133,33 @@ impl State {
         let metadata = self.archivo.file.metadata().unwrap();
         let per = format_permissions(metadata.permissions(), false);
 
+        let file = self.archivo.path.split('/').last().unwrap();
+        let lenguaje = file.split('.').last().unwrap();
+        let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
+
         let format = format!(
-            "Size: {} KB | {} x:{} y:{} realx:{} realy:{} char:{}",
-            metadata.len(),
+            "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
+            lang,
             per,
+            metadata.len(),
+            self.y,
+            self.archivo.buffer.len(),
             self.x,
             self.y,
             self.idx_x,
             self.idx_y,
-            self.archivo.buffer[9].len()
         );
-        mvwprintw(self.win, self.h - 3, 1, &format);
 
-        mvwhline(self.win, self.h - 5, 1, 95, self.w - 2);
+        let x = getmaxx(self.win);
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+        mvwhline(self.win, self.h - 3, 1, 32, x - 2);
+        if !self.mode {
+            mvwprintw(self.win, self.h - 3, 2, "NORMAL");
+        } else {
+            mvwprintw(self.win, self.h - 3, 2, "INSERT");
+        }
+        mvwprintw(self.win, self.h - 3, 10, &format);
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
         wmove(self.win, self.y, self.x);
 
         wrefresh(self.win);
@@ -123,13 +170,14 @@ impl State {
 
         let mut ch = wgetch(self.win);
         while ch != 113 {
+            self.mode = false;
             match ch {
                 //J
                 106 => {
-                    if self.y <= self.h - 7 {
+                    if self.y <= self.h - 7 && self.y < self.archivo.buffer.len() as i32 {
                         self.y += 1;
                         self.idx_y += 1;
-                    } else {
+                    } else if self.start <= self.h + 9 {
                         self.start += 1;
                     }
                 }
@@ -138,7 +186,7 @@ impl State {
                     if self.y > 1 {
                         self.y -= 1;
                         self.idx_y -= 1;
-                    } else {
+                    } else if self.start > 0 {
                         self.start -= 1;
                     }
                 }
@@ -162,6 +210,7 @@ impl State {
                 }
                 //insert
                 105 => {
+                    self.mode = !self.mode;
                     ch = wgetch(self.win);
                     let mut ty: char;
                     while ch != 97 {
@@ -241,4 +290,13 @@ pub fn format_permissions(permissions: fs::Permissions, is_directory: bool) -> S
         other_write,
         other_execute
     )
+}
+
+fn obtener_nombre_lenguaje(codigo: &str) -> Option<Lenguaje> {
+    match codigo.to_lowercase().as_str() {
+        "rs" => Some(Lenguaje::Rust),
+        "ex" => Some(Lenguaje::Elixir),
+        "c" => Some(Lenguaje::C),
+        _ => Some(Lenguaje::Undefined),
+    }
 }

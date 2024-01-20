@@ -141,6 +141,7 @@ impl State {
                                     self.archivo.buffer[self.idx_x].insert(self.idx_y, ty);
                                 }
                                 self.x += 1;
+                                self.idx_x += 1;
                                 mvwprintw(self.win, self.y, self.x, &ty.to_string());
                             }
                         }

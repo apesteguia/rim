@@ -68,13 +68,14 @@ impl State {
         let per = format_permissions(metadata.permissions(), false);
 
         let format = format!(
-            "Size: {} KB | {} x:{} y:{} realx:{} realy:{} ",
+            "Size: {} KB | {} x:{} y:{} realx:{} realy:{} char:{}",
             metadata.len(),
             per,
             self.x,
             self.y,
             self.idx_x,
             self.idx_y,
+            self.archivo.buffer[9].len()
         );
         mvwprintw(self.win, self.h - 3, 1, &format);
 
@@ -134,8 +135,12 @@ impl State {
                                 mvwprintw(self.win, self.y, self.x, " ");
                             }
                             _ => {
+                                if self.idx_x > self.archivo.buffer[self.idx_y].len() {
+                                    self.archivo.buffer[self.idx_y].push(ty);
+                                } else {
+                                    self.archivo.buffer[self.idx_x].insert(self.idx_y, ty);
+                                }
                                 self.x += 1;
-                                self.archivo.buffer[self.idx_x].insert(self.idx_y, ty);
                                 mvwprintw(self.win, self.y, self.x, &ty.to_string());
                             }
                         }

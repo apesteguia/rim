@@ -68,7 +68,7 @@ impl State {
 
             let format = if i < 10 {
                 format!(
-                    "{}  ",
+                    "{}     ",
                     self.archivo.buffer[i as usize]
                         .iter()
                         .cloned()
@@ -76,7 +76,15 @@ impl State {
                 )
             } else if i < 100 {
                 format!(
-                    "{} ",
+                    "{}    ",
+                    self.archivo.buffer[i as usize]
+                        .iter()
+                        .cloned()
+                        .collect::<String>()
+                )
+            } else if i < 1000 {
+                format!(
+                    "{}   ",
                     self.archivo.buffer[i as usize]
                         .iter()
                         .cloned()
@@ -197,18 +205,22 @@ impl State {
                     if ch == 100 {
                         if self.archivo.buffer.len() > 1 {
                             self.archivo.buffer.remove(self.idx_y);
+                            self.idx_y -= 1;
+                            self.y -= 1;
                         }
                         wclear(self.win);
                     }
                     if ch == 97 {
                         self.archivo.buffer.clear();
                         self.archivo.buffer.push(Vec::<char>::new());
+                        self.idx_y = 0;
+                        self.y = START_Y;
                         wclear(self.win);
                     }
                 }
                 //J
                 106 => {
-                    if self.y <= self.h - 6 {
+                    if self.y <= self.h - 6 && self.idx_y < self.archivo.buffer.len() - 1 {
                         self.y += 1;
                         self.idx_y += 1;
                         self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
@@ -250,6 +262,10 @@ impl State {
                         self.idx_x += 1;
                     }
                 }
+                98 => {
+                    self.idx_x = 0;
+                    self.x = START_X;
+                }
                 KEY_ENTER | 10 | 111 => {
                     self.archivo
                         .buffer
@@ -257,7 +273,14 @@ impl State {
                     self.idx_y += 1;
                     self.idx_x = 0;
                     self.x = START_X;
-                    self.y += 1;
+
+                    if self.idx_y < self.archivo.buffer.len() - 1
+                        && self.archivo.buffer.len() as i32 > self.h
+                    {
+                        self.start += 1;
+                    } else {
+                        self.y += 1;
+                    }
                     wclear(self.win);
                 }
                 //g

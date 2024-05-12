@@ -204,9 +204,17 @@ impl State {
                     ch = wgetch(self.win);
                     if ch == 100 {
                         if self.archivo.buffer.len() > 1 {
-                            self.archivo.buffer.remove(self.idx_y);
-                            self.idx_y -= 1;
-                            self.y -= 1;
+                            if self.idx_y < 1 {
+                                self.archivo.buffer.remove(self.idx_y + 1);
+                                self.x = START_X;
+                                self.idx_x = 0;
+                            } else {
+                                self.archivo.buffer.remove(self.idx_y);
+                                self.idx_y -= 1;
+                                self.y -= 1;
+                                self.x = START_X;
+                                self.idx_x = 0;
+                            }
                         }
                         wclear(self.win);
                     }
@@ -331,6 +339,7 @@ impl State {
                                 _ => {
                                     if self.idx_x > self.archivo.buffer[self.idx_y].len() {
                                         self.archivo.buffer[self.idx_y].push(ty);
+                                        // self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
                                     } else {
                                         self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
                                     }

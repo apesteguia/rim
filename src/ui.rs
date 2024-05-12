@@ -28,6 +28,8 @@ impl State {
         raw();
         start_color();
         cbreak();
+        init_color(COLOR_BLACK as i16, 40, 40, 40);
+        init_color(COLOR_BLUE as i16, 40, 40, 1000);
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
@@ -199,164 +201,36 @@ impl State {
         while ch != 113 {
             self.mode = false;
             match ch {
-                //d
                 100 => {
-                    ch = wgetch(self.win);
-                    if ch == 100 {
-                        if self.archivo.buffer.len() > 1 {
-                            if self.idx_y < 1 {
-                                self.archivo.buffer.remove(self.idx_y + 1);
-                                self.x = START_X;
-                                self.idx_x = 0;
-                            } else {
-                                self.archivo.buffer.remove(self.idx_y);
-                                self.idx_y -= 1;
-                                self.y -= 1;
-                                self.x = START_X;
-                                self.idx_x = 0;
-                            }
-                        }
-                        wclear(self.win);
-                    }
-                    if ch == 97 {
-                        self.archivo.buffer.clear();
-                        self.archivo.buffer.push(Vec::<char>::new());
-                        self.idx_y = 0;
-                        self.y = START_Y;
-                        wclear(self.win);
-                    }
+                    self.handle_delete(&mut ch);
                 }
-                //J
                 106 => {
-                    if self.y <= self.h - 6 && self.idx_y < self.archivo.buffer.len() - 1 {
-                        self.y += 1;
-                        self.idx_y += 1;
-                        self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
-                        self.idx_x = self.archivo.buffer[self.idx_y].len();
-                    } else if self.idx_y < self.archivo.buffer.len() - 1 {
-                        self.start += 1;
-                        self.idx_y += 1;
-                        self.idx_x = self.archivo.buffer[self.idx_y].len();
-                        wclear(self.win);
-                    }
+                    self.handle_movment_down();
                 }
-                //K
                 107 => {
-                    if self.y > START_Y {
-                        self.y -= 1;
-                        self.idx_y -= 1;
-                        self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
-                        self.idx_x = self.archivo.buffer[self.idx_y].len();
-                    } else if self.start > 0 {
-                        self.start -= 1;
-                        self.idx_y -= 1;
-                        self.idx_x = self.archivo.buffer[self.idx_y].len();
-                        wclear(self.win);
-                    }
+                    self.handle_movment_up();
                 }
-                //H
                 104 => {
-                    if self.x > START_X {
-                        self.x -= 1;
-                        self.idx_x -= 1;
-                    }
+                    self.handle_movment_left();
                 }
-                // L
                 108 => {
-                    if self.x > self.x - 2
-                        && self.x - START_X < self.archivo.buffer[self.idx_y].len() as i32
-                    {
-                        self.x += 1;
-                        self.idx_x += 1;
-                    }
+                    self.handle_movment_right();
                 }
                 98 => {
-                    self.idx_x = 0;
-                    self.x = START_X;
+                    self.handle_start_line();
+                }
+                118 => {
+                    self.handle_v();
                 }
                 KEY_ENTER | 10 | 111 => {
-                    self.archivo
-                        .buffer
-                        .insert(self.idx_y + 1, Vec::<char>::new());
-                    self.idx_y += 1;
-                    self.idx_x = 0;
-                    self.x = START_X;
-
-                    if self.idx_y < self.archivo.buffer.len() - 1
-                        && self.archivo.buffer.len() as i32 > self.h
-                    {
-                        self.start += 1;
-                    } else {
-                        self.y += 1;
-                    }
-                    wclear(self.win);
+                    self.handle_enter();
                 }
-                //g
                 103 => {
                     self.archivo.save();
                 }
                 //insert i
                 105 => {
-                    self.mode = true;
-                    self.display_bar();
-                    ch = wgetch(self.win);
-                    let mut ty: char;
-                    if ch == 27 {
-                        self.mode = false;
-                        self.display_bar();
-                    } else {
-                        loop {
-                            ty = ch as u8 as char;
-                            match ch {
-                                KEY_BACKSPACE => {
-                                    if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
-                                        self.archivo.buffer[self.idx_y].pop();
-                                        self.x =
-                                            self.archivo.buffer[self.idx_y].len() as i32 + START_X;
-                                        if self.idx_x > 0 {
-                                            self.idx_x -= 1;
-                                        }
-                                    } else {
-                                        self.archivo.buffer[self.idx_y].remove(self.idx_x);
-                                    }
-                                    self.display();
-                                }
-                                KEY_ENTER | 10 => {
-                                    self.archivo
-                                        .buffer
-                                        .insert(self.idx_y + 1, Vec::<char>::new());
-                                    self.idx_y += 1;
-                                    self.idx_x = 0;
-                                    self.x = START_X;
-                                    self.y += 1;
-                                    wclear(self.win);
-                                    self.display();
-                                }
-                                27 => {
-                                    self.mode = false;
-                                    self.display_bar();
-                                }
-                                _ => {
-                                    if self.idx_x > self.archivo.buffer[self.idx_y].len() {
-                                        self.archivo.buffer[self.idx_y].push(ty);
-                                        // self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
-                                    } else {
-                                        self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
-                                    }
-                                    self.x += 1;
-                                    self.idx_x += 1;
-                                    self.display();
-                                }
-                            }
-                            if ch != 27 {
-                                wrefresh(self.win);
-                                ch = wgetch(self.win);
-                            } else {
-                                self.display_bar();
-                                break;
-                            }
-                        }
-                    }
+                    self.handle_insert(&mut ch);
                 }
                 _ => {
                     self.x += 0;
@@ -367,5 +241,168 @@ impl State {
         }
 
         endwin();
+    }
+
+    fn handle_v(&mut self) {
+        self.idx_x = 0;
+        self.x = START_X;
+        self.idx_y = 0;
+        self.y = START_Y;
+        self.start = 0;
+        wclear(self.win);
+    }
+
+    //H
+    fn handle_movment_left(&mut self) {
+        if self.x > START_X {
+            self.x -= 1;
+            self.idx_x -= 1;
+        }
+    }
+    //L
+    fn handle_movment_right(&mut self) {
+        if self.x > self.x - 2 && self.x - START_X < self.archivo.buffer[self.idx_y].len() as i32 {
+            self.x += 1;
+            self.idx_x += 1;
+        }
+    }
+    //K
+    fn handle_movment_up(&mut self) {
+        if self.y > START_Y {
+            self.y -= 1;
+            self.idx_y -= 1;
+            self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
+            self.idx_x = self.archivo.buffer[self.idx_y].len();
+        } else if self.start > 0 {
+            self.start -= 1;
+            self.idx_y -= 1;
+            self.idx_x = self.archivo.buffer[self.idx_y].len();
+            wclear(self.win);
+        }
+    }
+    //J
+    fn handle_movment_down(&mut self) {
+        if self.y <= self.h - 6 && self.idx_y < self.archivo.buffer.len() - 1 {
+            self.y += 1;
+            self.idx_y += 1;
+            self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
+            self.idx_x = self.archivo.buffer[self.idx_y].len();
+        } else if self.idx_y < self.archivo.buffer.len() - 1 {
+            self.start += 1;
+            self.idx_y += 1;
+            self.idx_x = self.archivo.buffer[self.idx_y].len();
+            wclear(self.win);
+        }
+    }
+    //B
+    fn handle_start_line(&mut self) {
+        self.idx_x = 0;
+        self.x = START_X;
+    }
+
+    fn handle_enter(&mut self) {
+        self.archivo
+            .buffer
+            .insert(self.idx_y + 1, Vec::<char>::new());
+        self.idx_y += 1;
+        self.idx_x = 0;
+        self.x = START_X;
+
+        if self.idx_y < self.archivo.buffer.len() - 1 && self.archivo.buffer.len() as i32 > self.h {
+            self.start += 1;
+        } else {
+            self.y += 1;
+        }
+        wclear(self.win);
+    }
+
+    fn handle_delete(&mut self, ch: &mut i32) {
+        *ch = wgetch(self.win);
+        if *ch == 100 {
+            if self.archivo.buffer.len() > 1 {
+                if self.idx_y < 1 {
+                    self.archivo.buffer.remove(self.idx_y + 1);
+                    self.x = START_X;
+                    self.idx_x = 0;
+                } else {
+                    self.archivo.buffer.remove(self.idx_y);
+                    self.idx_y -= 1;
+                    self.y -= 1;
+                    self.x = START_X;
+                    self.idx_x = 0;
+                }
+            }
+            wclear(self.win);
+        }
+        if *ch == 97 {
+            self.archivo.buffer.clear();
+            self.archivo.buffer.push(Vec::<char>::new());
+            self.idx_y = 0;
+            self.y = START_Y;
+            wclear(self.win);
+        }
+    }
+
+    //I
+    fn handle_insert(&mut self, ch: &mut i32) {
+        self.mode = true;
+        self.display_bar();
+        *ch = wgetch(self.win);
+        let mut ty: char;
+        if *ch == 27 {
+            self.mode = false;
+            self.display_bar();
+        } else {
+            loop {
+                ty = *ch as u8 as char;
+                match *ch {
+                    KEY_BACKSPACE => {
+                        if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
+                            self.archivo.buffer[self.idx_y].pop();
+                            self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
+                            if self.idx_x > 0 {
+                                self.idx_x -= 1;
+                            }
+                        } else {
+                            self.archivo.buffer[self.idx_y].remove(self.idx_x);
+                        }
+                        self.display();
+                    }
+                    KEY_ENTER | 10 => {
+                        self.archivo
+                            .buffer
+                            .insert(self.idx_y + 1, Vec::<char>::new());
+                        self.idx_y += 1;
+                        self.idx_x = 0;
+                        self.x = START_X;
+                        self.y += 1;
+                        wclear(self.win);
+                        self.display();
+                    }
+                    27 => {
+                        self.mode = false;
+                        self.display_bar();
+                    }
+                    _ => {
+                        if self.idx_x > self.archivo.buffer[self.idx_y].len() {
+                            self.archivo.buffer[self.idx_y].push(ty);
+                            // self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                        } else {
+                            self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                        }
+                        self.x += 1;
+                        self.idx_x += 1;
+                        self.display();
+                    }
+                }
+                if *ch != 27 {
+                    wrefresh(self.win);
+                    *ch = wgetch(self.win);
+                } else {
+                    self.display_bar();
+                    break;
+                }
+            }
+        }
     }
 }

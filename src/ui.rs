@@ -345,14 +345,17 @@ impl State {
                 match *ch {
                     KEY_BACKSPACE => {
                         if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
-                            if self.idx_x > 0 {
-                                self.archivo.buffer[self.idx_y].remove(self.idx_x - 1);
-                                self.idx_x -= 1;
-                            }
                             self.archivo.buffer[self.idx_y].pop();
                             self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
                             if self.idx_x > 0 {
                                 self.idx_x -= 1;
+                            } else {
+                                if self.idx_y > 0 {
+                                    self.idx_y -= 1;
+                                    self.y -= 1;
+                                    self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
+                                    self.idx_x = self.archivo.buffer[self.idx_y].len();
+                                }
                             }
                         } else {
                             self.archivo.buffer[self.idx_y].remove(self.idx_x);

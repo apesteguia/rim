@@ -62,6 +62,7 @@ impl State {
         //wclear(self.win);
         //box_(self.win, 0, 0);
 
+        curs_set(CURSOR_VISIBILITY::CURSOR_VISIBLE);
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwprintw(self.win, 0, 1, &self.archivo.path);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
@@ -174,9 +175,21 @@ impl State {
                     self.handle_start_line();
                 }
                 32 => {
+                    self.explorer.get_files().expect("EXPLORER CANT READ DIRS");
                     self.explorer.display();
-                    self.explorer.update();
+                    let a = self.explorer.update();
                     wclear(self.win);
+                    match a {
+                        Some(str) => {
+                            delwin(self.win);
+                            *self = State::new(&str);
+                            endwin();
+                            self.display();
+                            self.update();
+                        }
+                        None => continue,
+                    };
+                    break;
                 }
                 9 | 11 => {
                     self.x += 0;

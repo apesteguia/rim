@@ -1,7 +1,8 @@
 use ncurses::*;
+use std::fs;
 
 const START_X: i32 = 1;
-const START_Y: i32 = 5;
+const START_Y: i32 = 1;
 
 #[derive(Debug)]
 pub struct Explorer {
@@ -12,6 +13,7 @@ pub struct Explorer {
     pub win: WINDOW,
     pub x: i32,
     pub y: i32,
+    pub selected: usize,
     pub idx_x: i32,
     pub idx_y: i32,
     pub start: i32,
@@ -25,6 +27,7 @@ impl Explorer {
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        init_pair(4, COLOR_RED, COLOR_BLACK);
 
         let max_width = getmaxx(stdscr());
         let max_height = getmaxy(stdscr());
@@ -59,6 +62,7 @@ impl Explorer {
             w: width_with_margin as i32,
             h: height_with_margin as i32,
             win,
+            selected: 0,
             x: START_X,
             y: START_Y,
             idx_x: 0,
@@ -69,18 +73,42 @@ impl Explorer {
     }
 
     pub fn display(&self) {
+        curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
         box_(self.win, 0, 0);
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwprintw(self.win, 0, 1, &self.path);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+
+        for (i, v) in self.dirs.iter().enumerate() {
+            if self.selected == i {
+                wattron(self.win, COLOR_PAIR(1) | A_BOLD());
+                mvwprintw(self.win, i as i32 + self.y, self.x, v);
+                wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
+            } else {
+                mvwprintw(self.win, i as i32 + self.y, self.x, v);
+            }
+        }
+
+        wrefresh(self.win);
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Option<String> {
         keypad(self.win, true);
 
         let mut ch = wgetch(self.win);
         while ch != 113 {
             match ch {
+                106 => {
+                    if self.selected < self.dirs.len() - 1 {
+                        self.selected += 1;
+                    }
+                }
+                107 => {
+                    if self.selected > 0 {
+                        self.selected -= 1;
+                    }
+                }
+                KEY_ENTER | 10 | 111 => return Some(self.dirs[self.selected].clone()),
                 _ => {
                     self.x += 0;
                 }
@@ -88,9 +116,26 @@ impl Explorer {
             self.display();
             ch = wgetch(self.win);
         }
+        None
     }
 
-    pub fn get_dirs(&mut self) -> Result<(), std::io::Error> {
+    pub fn get_files(&mut self) -> Result<(), std::io::Error> {
+        let paths = fs::read_dir(&self.path)?;
+        for entry in paths {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                self.dirs.push(path.display().to_string());
+            }
+        }
         Ok(())
     }
+
+    // pub fn get_dirs(&mut self) -> Result<(), std::io::Error> {
+    //     let paths = fs::read_dir(&self.path)?;
+    //     for i in paths {
+    //         self.dirs.push(i?.path().display().to_string());
+    //     }
+    //     Ok(())
+    // }
 }

@@ -109,38 +109,38 @@ impl State {
             mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
         }
 
-        let metadata = self.archivo.file.metadata().unwrap();
-        let per = format_permissions(metadata.permissions(), false);
-
-        let file = self.archivo.path.split('/').last().unwrap();
-        let lenguaje = file.split('.').last().unwrap();
-        let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
-
-        let format = format!(
-            "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
-            lang,
-            per,
-            metadata.len(),
-            self.y,
-            self.archivo.buffer.len(),
-            self.x,
-            self.y,
-            self.idx_x,
-            self.idx_y,
-        );
-
-        let x = getmaxx(self.win);
-        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
-        mvwhline(self.win, self.h - 3, 1, 32, x - 2);
-        if !self.mode {
-            mvwprintw(self.win, self.h - 3, 2, "NORMAL");
-        } else {
-            mvwprintw(self.win, self.h - 3, 2, "INSERT");
-        }
-        mvwprintw(self.win, self.h - 3, 10, &format);
-        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
-        wmove(self.win, self.y, self.x);
-
+        // let metadata = self.archivo.file.metadata().unwrap();
+        // let per = format_permissions(metadata.permissions(), false);
+        //
+        // let file = self.archivo.path.split('/').last().unwrap();
+        // let lenguaje = file.split('.').last().unwrap();
+        // let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
+        //
+        // let format = format!(
+        //     "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
+        //     lang,
+        //     per,
+        //     metadata.len(),
+        //     self.y,
+        //     self.archivo.buffer.len(),
+        //     self.x,
+        //     self.y,
+        //     self.idx_x,
+        //     self.idx_y,
+        // );
+        //
+        // let x = getmaxx(self.win);
+        // wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+        // mvwhline(self.win, self.h - 3, 1, 32, x - 2);
+        // if !self.mode {
+        //     mvwprintw(self.win, self.h - 3, 2, "NORMAL");
+        // } else {
+        //     mvwprintw(self.win, self.h - 3, 2, "INSERT");
+        // }
+        // mvwprintw(self.win, self.h - 3, 10, &format);
+        // wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+        // wmove(self.win, self.y, self.x);
+        self.display_bar();
         wrefresh(self.win);
     }
 
@@ -216,7 +216,7 @@ impl State {
                     self.handle_enter();
                 }
                 103 => {
-                    self.archivo.save();
+                    self.handle_save();
                 }
                 105 => {
                     self.handle_insert(&mut ch);
@@ -266,6 +266,7 @@ impl State {
             self.start -= 1;
             self.idx_y -= 1;
             self.idx_x = self.archivo.buffer[self.idx_y].len();
+            self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
             wclear(self.win);
         }
     }
@@ -280,8 +281,21 @@ impl State {
             self.start += 1;
             self.idx_y += 1;
             self.idx_x = self.archivo.buffer[self.idx_y].len();
+            self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
             wclear(self.win);
         }
+    }
+    fn handle_save(&mut self) {
+        self.archivo.save();
+        let metadata = self.archivo.file.metadata().unwrap();
+        let str = format!(
+            "{} {}L {} written",
+            self.archivo.path,
+            self.archivo.buffer.len(),
+            metadata.len()
+        );
+
+        mvwprintw(self.win, self.h - 2, 2, &str);
     }
     //B
     fn handle_start_line(&mut self) {
@@ -370,17 +384,26 @@ impl State {
                     }
                     27 => {
                         self.mode = false;
-                        self.display_bar();
+                        //self.display_bar();
+                        //self.display();
                     }
                     _ => {
-                        if self.idx_x > self.archivo.buffer[self.idx_y].len() {
-                            self.archivo.buffer[self.idx_y].push(ty);
-                            // self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                        if self.x < self.w - START_X {
+                            if self.idx_x > self.archivo.buffer[self.idx_y].len() {
+                                self.archivo.buffer[self.idx_y].push(ty);
+                                // self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                            } else {
+                                self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                            }
+                            self.x += 1;
+                            self.idx_x += 1;
                         } else {
-                            self.archivo.buffer[self.idx_y].insert(self.idx_x, ty);
+                            self.idx_x = 0;
+                            self.x = START_X;
+                            self.idx_y += 1;
+                            self.y += 1;
                         }
-                        self.x += 1;
-                        self.idx_x += 1;
+
                         self.display();
                     }
                 }

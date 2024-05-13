@@ -96,8 +96,9 @@ impl Explorer {
         keypad(self.win, true);
 
         let mut ch = wgetch(self.win);
-        while ch != 113 {
+        loop {
             match ch {
+                113 => break,
                 106 => {
                     if self.selected < self.dirs.len() - 1 {
                         self.selected += 1;
@@ -108,7 +109,9 @@ impl Explorer {
                         self.selected -= 1;
                     }
                 }
-                KEY_ENTER | 10 | 111 => return Some(self.dirs[self.selected].clone()),
+                KEY_ENTER | 10 | 111 => {
+                    return Some(self.dirs[self.selected].clone());
+                }
                 _ => {
                     self.x += 0;
                 }
@@ -116,6 +119,7 @@ impl Explorer {
             self.display();
             ch = wgetch(self.win);
         }
+
         None
     }
 

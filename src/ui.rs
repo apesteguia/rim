@@ -41,6 +41,8 @@ impl State {
         let end = h - 5;
 
         let win = newwin(h, w, 0, 0);
+        let mut explorer = explorer::Explorer::new(&path.into());
+        explorer.get_files().expect("EXPLORER CANT READ DIRS");
 
         State {
             archivo: Archivo::new(&path.into()),
@@ -54,7 +56,7 @@ impl State {
             idx_y: 0,
             start: 0,
             end,
-            explorer: explorer::Explorer::new(&path.into()),
+            explorer,
         }
     }
 
@@ -175,7 +177,6 @@ impl State {
                     self.handle_start_line();
                 }
                 32 => {
-                    self.explorer.get_files().expect("EXPLORER CANT READ DIRS");
                     self.explorer.display();
                     let a = self.explorer.update();
                     wclear(self.win);
@@ -186,10 +187,10 @@ impl State {
                             endwin();
                             self.display();
                             self.update();
+                            break;
                         }
-                        None => continue,
+                        None => self.x += 0,
                     };
-                    break;
                 }
                 9 | 11 => {
                     self.x += 0;

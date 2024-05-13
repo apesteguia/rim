@@ -41,7 +41,7 @@ pub fn obtener_nombre_lenguaje(codigo: &str) -> Option<Lenguaje> {
         "jsx" | "tsx" => Some(Lenguaje::Jsx),
         "s" | "asm" | "nasm" => Some(Lenguaje::Assembly),
         "hs" => Some(Lenguaje::Haskell),
-        "ml" => Some(Lenguaje::OCaml),
+        "ml" | "mli" => Some(Lenguaje::OCaml),
         "cjl" => Some(Lenguaje::Clojure),
         "go" => Some(Lenguaje::Go),
         "css" => Some(Lenguaje::Css),

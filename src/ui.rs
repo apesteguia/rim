@@ -109,37 +109,6 @@ impl State {
             mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
         }
 
-        // let metadata = self.archivo.file.metadata().unwrap();
-        // let per = format_permissions(metadata.permissions(), false);
-        //
-        // let file = self.archivo.path.split('/').last().unwrap();
-        // let lenguaje = file.split('.').last().unwrap();
-        // let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
-        //
-        // let format = format!(
-        //     "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
-        //     lang,
-        //     per,
-        //     metadata.len(),
-        //     self.y,
-        //     self.archivo.buffer.len(),
-        //     self.x,
-        //     self.y,
-        //     self.idx_x,
-        //     self.idx_y,
-        // );
-        //
-        // let x = getmaxx(self.win);
-        // wattron(self.win, COLOR_PAIR(2) | A_BOLD());
-        // mvwhline(self.win, self.h - 3, 1, 32, x - 2);
-        // if !self.mode {
-        //     mvwprintw(self.win, self.h - 3, 2, "NORMAL");
-        // } else {
-        //     mvwprintw(self.win, self.h - 3, 2, "INSERT");
-        // }
-        // mvwprintw(self.win, self.h - 3, 10, &format);
-        // wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
-        // wmove(self.win, self.y, self.x);
         self.display_bar();
         wrefresh(self.win);
     }
@@ -157,7 +126,7 @@ impl State {
             lang,
             per,
             metadata.len(),
-            self.y,
+            self.idx_y,
             self.archivo.buffer.len(),
             self.x,
             self.y,
@@ -208,6 +177,9 @@ impl State {
                     self.explorer.display();
                     self.explorer.update();
                     wclear(self.win);
+                }
+                9 | 11 => {
+                    self.x += 0;
                 }
                 118 => {
                     self.handle_v();
@@ -286,16 +258,23 @@ impl State {
         }
     }
     fn handle_save(&mut self) {
-        self.archivo.save();
+        let str: String;
+        let a = self.archivo.save();
         let metadata = self.archivo.file.metadata().unwrap();
-        let str = format!(
-            "{} {}L {} written",
-            self.archivo.path,
-            self.archivo.buffer.len(),
-            metadata.len()
-        );
+        match a {
+            Ok(_) => {
+                str = format!(
+                    "{} {}L {}B written",
+                    self.archivo.path,
+                    self.archivo.buffer.len(),
+                    metadata.len()
+                )
+            }
+            Err(err) => str = format!("Nothing updated due to error {}", err,),
+        }
 
         mvwprintw(self.win, self.h - 2, 2, &str);
+        wrefresh(self.win);
     }
     //B
     fn handle_start_line(&mut self) {
@@ -324,7 +303,11 @@ impl State {
         if *ch == 100 {
             if self.archivo.buffer.len() > 1 {
                 if self.idx_y < 1 {
-                    self.archivo.buffer.remove(self.idx_y + 1);
+                    if !self.archivo.buffer[self.idx_y].is_empty() {
+                        self.archivo.buffer[self.idx_y].clear();
+                    } else {
+                        self.archivo.buffer.remove(self.idx_y + 1);
+                    }
                     self.x = START_X;
                     self.idx_x = 0;
                 } else {
@@ -337,6 +320,7 @@ impl State {
             }
             wclear(self.win);
         }
+        // a -> ALL
         if *ch == 97 {
             self.archivo.buffer.clear();
             self.archivo.buffer.push(Vec::<char>::new());
@@ -361,6 +345,10 @@ impl State {
                 match *ch {
                     KEY_BACKSPACE => {
                         if self.x > self.archivo.buffer[self.idx_y].len() as i32 {
+                            if self.idx_x > 0 {
+                                self.archivo.buffer[self.idx_y].remove(self.idx_x - 1);
+                                self.idx_x -= 1;
+                            }
                             self.archivo.buffer[self.idx_y].pop();
                             self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
                             if self.idx_x > 0 {

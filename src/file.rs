@@ -32,14 +32,16 @@ impl Archivo {
         }
     }
 
-    pub fn save(&self) {
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         let flattened: String = self
             .buffer
             .iter()
             .flat_map(|line| line.iter().cloned().chain(std::iter::once('\n')))
             .collect();
 
-        fs::write(&self.path, flattened).expect("Error writing to file");
+        fs::write(&self.path, flattened)?;
+
+        Ok(())
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::constants::obtener_nombre_lenguaje;
+use crate::explorer;
 use crate::file::{format_permissions, Archivo};
 use ncurses::*;
 
@@ -18,10 +19,11 @@ pub struct State {
     pub idx_y: usize,
     pub start: i32,
     pub end: i32,
+    pub explorer: explorer::Explorer,
 }
 
 impl State {
-    pub fn new(path: &str) -> State {
+    pub fn new(path: impl Into<String> + Copy) -> State {
         initscr();
         noecho();
         keypad(stdscr(), true);
@@ -41,7 +43,7 @@ impl State {
         let win = newwin(h, w, 0, 0);
 
         State {
-            archivo: Archivo::new(path),
+            archivo: Archivo::new(&path.into()),
             w,
             h,
             win,
@@ -52,6 +54,7 @@ impl State {
             idx_y: 0,
             start: 0,
             end,
+            explorer: explorer::Explorer::new(&path.into()),
         }
     }
 
@@ -105,24 +108,6 @@ impl State {
             wattroff(self.win, COLOR_PAIR(3));
             mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
         }
-
-        /*
-        for (i, f) in self.archivo.buffer.iter().enumerate() {
-            if i as i32 >= self.h - 5 {
-                break;
-            }
-
-            if i as i32 <= self.start {
-                let format = if i < 10 {
-                    format!(" {} | {}", i, f.iter().cloned().collect::<String>())
-                } else {
-                    format!("{} | {}", i, f.iter().cloned().collect::<String>())
-                };
-
-                mvwprintw(self.win, (i + 1) as i32, 1, &format);
-            }
-        }
-        */
 
         let metadata = self.archivo.file.metadata().unwrap();
         let per = format_permissions(metadata.permissions(), false);
@@ -219,6 +204,11 @@ impl State {
                 98 => {
                     self.handle_start_line();
                 }
+                32 => {
+                    self.explorer.display();
+                    self.explorer.update();
+                    wclear(self.win);
+                }
                 118 => {
                     self.handle_v();
                 }
@@ -228,7 +218,6 @@ impl State {
                 103 => {
                     self.archivo.save();
                 }
-                //insert i
                 105 => {
                     self.handle_insert(&mut ch);
                 }

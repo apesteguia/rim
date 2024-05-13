@@ -363,9 +363,17 @@ impl State {
                         self.display();
                     }
                     KEY_ENTER | 10 => {
-                        self.archivo
-                            .buffer
-                            .insert(self.idx_y + 1, Vec::<char>::new());
+                        let mut right: Vec<char> = Vec::new();
+                        for i in self.idx_x..self.archivo.buffer[self.idx_y].len() {
+                            right.push(self.archivo.buffer[self.idx_y][i]);
+                        }
+                        if let Some(buffer_y) = self.archivo.buffer.get_mut(self.idx_y) {
+                            if self.idx_x < buffer_y.len() {
+                                buffer_y.truncate(self.idx_x); // Elimina todos los elementos a partir del índice self.idx_x
+                            }
+                        }
+
+                        self.archivo.buffer.insert(self.idx_y + 1, right);
                         self.idx_y += 1;
                         self.idx_x = 0;
                         self.x = START_X;

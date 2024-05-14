@@ -495,6 +495,7 @@ impl State {
                         } else {
                             self.archivo.buffer[self.idx_y].remove(self.idx_x);
                         }
+                        wclear(self.win);
                         self.display();
                     }
                     KEY_ENTER | 10 => {

@@ -1,3 +1,5 @@
 pub fn main() {
-    let a = 1;
+    for i in a {
+        
+    }
 }

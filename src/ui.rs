@@ -33,7 +33,7 @@ impl State {
         raw();
         start_color();
         cbreak();
-        init_color(COLOR_BLACK as i16, 40, 40, 40);
+        init_color(COLOR_BLACK as i16, 110, 110, 110);
         init_color(COLOR_BLUE as i16, 40, 40, 1000);
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
@@ -573,10 +573,27 @@ impl State {
                             self.x += 1;
                             self.idx_x += 1;
                         } else {
-                            self.idx_x = 0;
-                            self.x = START_X;
-                            self.idx_y += 1;
-                            self.y += 1;
+                            if self.idx_y == self.archivo.buffer.len() - 1 {
+                                if let Some(buffer_y) = self.archivo.buffer.get_mut(self.idx_y) {
+                                    if self.idx_x < buffer_y.len() {
+                                        buffer_y.truncate(self.idx_x); // Elimina todos los elementos a partir del índice self.idx_x
+                                    }
+                                }
+
+                                self.archivo
+                                    .buffer
+                                    .insert(self.idx_y + 1, Vec::<char>::new());
+
+                                self.idx_x = 0;
+                                self.x = START_X;
+                                self.idx_y += 1;
+                                self.y += 1;
+                            } else {
+                                self.idx_x = 0;
+                                self.x = START_X;
+                                self.idx_y += 1;
+                                self.y += 1;
+                            }
                         }
 
                         self.display();

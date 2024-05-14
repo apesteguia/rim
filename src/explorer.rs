@@ -149,20 +149,35 @@ impl Explorer {
     }
 
     pub fn display(&self) {
+        wclear(self.win);
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
         box_(self.win, 0, 0);
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwprintw(self.win, 0, 1, &self.path);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
 
-        for (i, v) in self.dirs.iter().enumerate() {
+        // for (i, v) in self.dirs.iter().enumerate() {
+        //     if (i as i32) < self.h - 2 {
+        //         if self.selected == i {
+        //             wattron(self.win, COLOR_PAIR(1) | A_BOLD());
+        //             mvwprintw(self.win, i as i32 + self.y, self.x, v);
+        //             wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
+        //         } else {
+        //             mvwprintw(self.win, i as i32 + self.y, self.x, v);
+        //         }
+        //     }
+        // }
+
+        let mut counter = 0;
+        for i in self.selected..self.dirs.len() {
             if self.selected == i {
                 wattron(self.win, COLOR_PAIR(1) | A_BOLD());
-                mvwprintw(self.win, i as i32 + self.y, self.x, v);
+                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i]);
                 wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
             } else {
-                mvwprintw(self.win, i as i32 + self.y, self.x, v);
+                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i]);
             }
+            counter += 1;
         }
 
         wrefresh(self.win);

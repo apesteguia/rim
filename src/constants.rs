@@ -45,7 +45,7 @@ pub fn obtener_nombre_lenguaje(codigo: &str) -> Option<Lenguaje> {
         "cjl" => Some(Lenguaje::Clojure),
         "go" => Some(Lenguaje::Go),
         "css" => Some(Lenguaje::Css),
-        "html" => Some(Lenguaje::Html),
+        "html" | "htmx" => Some(Lenguaje::Html),
         "sh" => Some(Lenguaje::Bash),
         "php" => Some(Lenguaje::Php),
         "rb" => Some(Lenguaje::Ruby),

@@ -1,3 +1,4 @@
 explorer scroll
 check argv[1] is valid file or path
 add more lenguaje keywords
+handle command

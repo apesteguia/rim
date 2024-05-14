@@ -78,10 +78,44 @@ pub fn reserved_words(l: &Lenguaje) -> Vec<String> {
         .collect(),
 
         Lenguaje::C => vec![
-            "auto", "else", "if", "bread", "case", "char", "const", "continue", "deafult", "do",
+            "auto", "else", "if", "break", "case", "char", "const", "continue", "deafult", "do",
             "double", "enum", "extern", "float", "for", "goto", "int", "long", "register",
             "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef",
             "union", "unsigned", "void", "continue", "while", "volatile",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect(),
+
+        Lenguaje::JavaScript => vec![
+            "function",
+            "else",
+            "if",
+            "break",
+            "case",
+            "const",
+            "continue",
+            "deafult",
+            "do",
+            "for",
+            "let",
+            "export",
+            "return",
+            "short",
+            "signed",
+            "sizeof",
+            "static",
+            "struct",
+            "switch",
+            "var",
+            "class",
+            "unsigned",
+            "throw",
+            "try",
+            "while",
+            "catch",
+            "new",
+            "protected",
         ]
         .iter()
         .map(|s| s.to_string())

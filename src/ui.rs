@@ -5,7 +5,6 @@ use ncurses::*;
 
 const START_X: i32 = 5; // x=0 in the editor
 const START_Y: i32 = 1; // y=0 in the editor
-const MY_GLOBAL_VEC: [&str; 4] = ["pub", "fn", "let", "for"];
 
 #[derive(Debug)]
 pub struct State {
@@ -235,7 +234,9 @@ impl State {
 
         let mut ch = wgetch(self.win);
         while ch != 113 {
-            self.mode = false;
+            if self.mode {
+                self.handle_insert(&mut ch);
+            }
             match ch {
                 100 => {
                     self.handle_delete(&mut ch);
@@ -297,6 +298,9 @@ impl State {
                 }
                 103 => {
                     self.handle_save();
+                }
+                58 => {
+                    self.handle_command(&mut ch);
                 }
                 105 => {
                     self.handle_insert(&mut ch);
@@ -430,6 +434,7 @@ impl State {
         } else {
             self.y += 1;
         }
+        self.mode = true;
         wclear(self.win);
     }
 
@@ -462,6 +467,45 @@ impl State {
             self.idx_y = 0;
             self.y = START_Y;
             wclear(self.win);
+        }
+    }
+
+    fn handle_command(&mut self, ch: &mut i32) {
+        mvwprintw(self.win, self.h - 2, 1, "Enter a command: ");
+        wrefresh(self.win);
+        *ch = wgetch(self.win);
+        let mut ty: char;
+        if *ch == 27 {
+            wclear(self.win);
+            self.display();
+        } else {
+            loop {
+                ty = *ch as u8 as char;
+                match *ch {
+                    119 => {
+                        *ch = wgetch(self.win);
+                        match *ch {
+                            KEY_ENTER => {
+                                self.archivo.save().unwrap();
+                                mvwprintw(self.win, self.h - 2, 1, "ARCHIVO GURADADO");
+                                wrefresh(self.win);
+                                self.display();
+                            }
+                            _ => (),
+                        }
+                    }
+                    _ => (),
+                }
+                if *ch != 27 {
+                    mvwprintw(self.win, self.h - 2, 18, &ty.to_string());
+                    wrefresh(self.win);
+                    *ch = wgetch(self.win);
+                } else {
+                    wclear(self.win);
+                    self.display();
+                    break;
+                }
+            }
         }
     }
 

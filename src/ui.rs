@@ -70,9 +70,18 @@ impl State {
         }
     }
 
-    pub fn display(&self) {
+    pub fn display(&mut self) {
         //wclear(self.win);
         //box_(self.win, 0, 0);
+        let w = getmaxx(stdscr());
+        let h = getmaxy(stdscr());
+
+        if w != self.w || h != self.h {
+            self.win = newwin(h, w, 0, 0);
+            self.h = h;
+            self.w = w;
+            self.end = w - 5;
+        }
 
         curs_set(CURSOR_VISIBILITY::CURSOR_VISIBLE);
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
@@ -466,6 +475,8 @@ impl State {
             self.archivo.buffer.push(Vec::<char>::new());
             self.idx_y = 0;
             self.y = START_Y;
+            self.x = START_X;
+            self.idx_x = 0;
             wclear(self.win);
         }
     }

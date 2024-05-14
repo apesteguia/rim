@@ -81,6 +81,13 @@ impl State {
             self.h = h;
             self.w = w;
             self.end = w - 5;
+            self.idx_x = 0;
+            self.x = START_X;
+            self.y = START_Y;
+            self.idx_y = 0;
+            self.start = 0;
+            self.explorer = explorer::Explorer::new(&self.archivo.path);
+            self.explorer.get_files().unwrap();
         }
 
         curs_set(CURSOR_VISIBILITY::CURSOR_VISIBLE);
@@ -428,6 +435,15 @@ impl State {
             } else {
                 break;
             }
+        }
+
+        match self.archivo.buffer[self.idx_y].last().unwrap() {
+            '{' | '(' | ':' => {
+                for _ in 0..4 {
+                    v.push(' ');
+                }
+            }
+            _ => (),
         }
 
         self.archivo

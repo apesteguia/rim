@@ -38,7 +38,7 @@ impl State {
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
-        init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
+        init_pair(5, COLOR_RED, COLOR_BLACK);
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());

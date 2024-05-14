@@ -277,8 +277,23 @@ impl State {
                 118 => {
                     self.handle_v();
                 }
-                KEY_ENTER | 10 | 111 => {
+                KEY_LEFT => {
+                    self.handle_movment_left();
+                }
+                KEY_RIGHT => {
+                    self.handle_movment_right();
+                }
+                KEY_UP => {
+                    self.handle_movment_up();
+                }
+                KEY_DOWN => {
+                    self.handle_movment_up();
+                }
+                KEY_ENTER | 10 => {
                     self.handle_enter();
+                }
+                111 => {
+                    self.handle_new_line();
                 }
                 103 => {
                     self.handle_save();
@@ -350,6 +365,7 @@ impl State {
             wclear(self.win);
         }
     }
+
     fn handle_save(&mut self) {
         let str: String;
         let a = self.archivo.save();
@@ -382,6 +398,32 @@ impl State {
         self.idx_y += 1;
         self.idx_x = 0;
         self.x = START_X;
+
+        if self.idx_y < self.archivo.buffer.len() - 1 && self.archivo.buffer.len() as i32 > self.h {
+            self.start += 1;
+        } else {
+            self.y += 1;
+        }
+        wclear(self.win);
+    }
+
+    fn handle_new_line(&mut self) {
+        let mut v: Vec<char> = Vec::new();
+        for i in self.archivo.buffer[self.idx_y].iter() {
+            if *i == ' ' {
+                v.push(*i);
+            } else {
+                break;
+            }
+        }
+
+        self.archivo
+            .buffer
+            .insert(self.idx_y + 1, Vec::<char>::from(v.clone()));
+        self.idx_y += 1;
+        let l = v.len();
+        self.idx_x = l;
+        self.x = START_X + l as i32;
 
         if self.idx_y < self.archivo.buffer.len() - 1 && self.archivo.buffer.len() as i32 > self.h {
             self.start += 1;
@@ -457,6 +499,14 @@ impl State {
                     }
                     KEY_ENTER | 10 => {
                         let mut right: Vec<char> = Vec::new();
+                        for i in self.archivo.buffer[self.idx_y].iter() {
+                            if *i == ' ' {
+                                right.push(*i);
+                            } else {
+                                break;
+                            }
+                        }
+
                         for i in self.idx_x..self.archivo.buffer[self.idx_y].len() {
                             right.push(self.archivo.buffer[self.idx_y][i]);
                         }
@@ -466,10 +516,13 @@ impl State {
                             }
                         }
 
-                        self.archivo.buffer.insert(self.idx_y + 1, right);
+                        self.archivo
+                            .buffer
+                            .insert(self.idx_y + 1, Vec::<char>::from(right.clone()));
                         self.idx_y += 1;
-                        self.idx_x = 0;
-                        self.x = START_X;
+                        let l = right.len();
+                        self.idx_x = l;
+                        self.x = START_X + l as i32;
                         self.y += 1;
                         wclear(self.win);
                         self.display();
@@ -478,6 +531,35 @@ impl State {
                         self.mode = false;
                         //self.display_bar();
                         //self.display();
+                    }
+                    9 => {
+                        if self.x > self.w + START_X + 4 {
+                            // Insert a single space
+                            self.archivo.buffer[self.idx_y].insert(self.idx_x, ' ');
+                            self.x += 1;
+                            self.idx_x += 1;
+                        } else {
+                            // Insert four spaces
+                            for _ in 0..4 {
+                                self.archivo.buffer[self.idx_y].insert(self.idx_x, ' ');
+                                self.x += 1;
+                                self.idx_x += 1;
+                            }
+                        }
+                        wclear(self.win);
+                        self.display();
+                    }
+                    KEY_LEFT => {
+                        self.handle_movment_left();
+                    }
+                    KEY_RIGHT => {
+                        self.handle_movment_right();
+                    }
+                    KEY_UP => {
+                        self.handle_movment_up();
+                    }
+                    KEY_DOWN => {
+                        self.handle_movment_up();
                     }
                     _ => {
                         if self.x < self.w - START_X {

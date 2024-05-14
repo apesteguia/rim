@@ -527,7 +527,13 @@ impl State {
                             self.archivo.buffer[self.idx_y].pop();
                             self.x = self.archivo.buffer[self.idx_y].len() as i32 + START_X;
                             if self.idx_x > 0 {
-                                self.idx_x -= 1;
+                                if self.archivo.buffer[self.idx_y].iter().all(|&f| f == ' ') {
+                                    self.archivo.buffer[self.idx_y].clear();
+                                    self.idx_x = 0;
+                                    self.x = START_X
+                                } else {
+                                    self.idx_x -= 1;
+                                }
                             } else {
                                 if self.idx_y > 0 {
                                     self.idx_y -= 1;
@@ -550,6 +556,14 @@ impl State {
                             } else {
                                 break;
                             }
+                        }
+                        match self.archivo.buffer[self.idx_y].last().unwrap() {
+                            '{' | '(' | ':' => {
+                                for _ in 0..4 {
+                                    right.push(' ');
+                                }
+                            }
+                            _ => (),
                         }
 
                         for i in self.idx_x..self.archivo.buffer[self.idx_y].len() {

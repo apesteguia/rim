@@ -46,13 +46,87 @@ impl Explorer {
         );
 
         let mut p = path.into();
-        if let Ok(current_dir) = std::env::current_dir() {
-            let file_path = current_dir.join(p);
-            let buf = std::path::Path::new(&file_path);
-            if let Some(parent_dir) = buf.parent() {
-                p = parent_dir.display().to_string();
-            } else {
-                p = "NO DATA".to_string();
+        if p.is_empty() {
+            p = std::env::current_dir()
+                .expect("FAILED CURRENT DIR")
+                .to_str()
+                .expect("FAILED CONVERT TO STRING")
+                .to_string();
+        } else {
+            if let Ok(current_dir) = std::env::current_dir() {
+                let file_path = current_dir.join(p);
+                let buf = std::path::Path::new(&file_path);
+                if let Some(parent_dir) = buf.parent() {
+                    p = parent_dir.display().to_string();
+                } else {
+                    p = "NO DATA".to_string();
+                }
+            }
+        }
+
+        Self {
+            path: p,
+            dirs: Vec::new(),
+            w: width_with_margin as i32,
+            h: height_with_margin as i32,
+            win,
+            selected: 0,
+            x: START_X,
+            y: START_Y,
+            idx_x: 0,
+            idx_y: 0,
+            start: 0,
+            end: max_height - 5,
+        }
+    }
+
+    pub fn raw(path: impl Into<String> + Copy) -> Self {
+        initscr();
+        noecho();
+        keypad(stdscr(), true);
+        raw();
+        start_color();
+        cbreak();
+
+        init_color(COLOR_BLACK as i16, 40, 40, 40);
+        init_color(COLOR_BLUE as i16, 40, 40, 1000);
+        init_pair(1, COLOR_BLACK, COLOR_WHITE);
+        init_pair(2, COLOR_WHITE, COLOR_BLUE);
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        init_pair(4, COLOR_RED, COLOR_BLACK);
+
+        let max_width = getmaxx(stdscr());
+        let max_height = getmaxy(stdscr());
+
+        let width_with_margin = max_width as f32 * 0.6;
+        let height_with_margin = max_height as f32 * 0.6;
+
+        let x_position = ((max_width as f32 - width_with_margin) / 2.0) as i32;
+        let y_position = ((max_height as f32 - height_with_margin) / 2.0) as i32;
+
+        let win = newwin(
+            height_with_margin as i32,
+            width_with_margin as i32,
+            y_position,
+            x_position,
+        );
+
+        let mut p = path.into();
+        if p.is_empty() {
+            p = std::env::current_dir()
+                .expect("FAILED CURRENT DIR")
+                .to_str()
+                .expect("FAILED CONVERT TO STRING")
+                .to_string();
+        } else {
+            if let Ok(current_dir) = std::env::current_dir() {
+                let file_path = current_dir.join(p);
+                let buf = std::path::Path::new(&file_path);
+                if let Some(parent_dir) = buf.parent() {
+                    p = parent_dir.display().to_string();
+                } else {
+                    p = "NO DATA".to_string();
+                }
             }
         }
 
@@ -120,6 +194,38 @@ impl Explorer {
             ch = wgetch(self.win);
         }
 
+        None
+    }
+
+    pub fn update_raw(&mut self) -> Option<String> {
+        keypad(self.win, true);
+
+        let mut ch = wgetch(self.win);
+        loop {
+            match ch {
+                113 => break,
+                106 => {
+                    if self.selected < self.dirs.len() - 1 {
+                        self.selected += 1;
+                    }
+                }
+                107 => {
+                    if self.selected > 0 {
+                        self.selected -= 1;
+                    }
+                }
+                KEY_ENTER | 10 | 111 => {
+                    return Some(self.dirs[self.selected].clone());
+                }
+                _ => {
+                    self.x += 0;
+                }
+            }
+            self.display();
+            ch = wgetch(self.win);
+        }
+
+        endwin();
         None
     }
 

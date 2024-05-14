@@ -23,7 +23,7 @@ pub struct Explorer {
 
 impl Explorer {
     pub fn new(path: impl Into<String> + Copy) -> Self {
-        init_color(COLOR_BLACK as i16, 110, 110, 110);
+        init_color(COLOR_BLACK as i16, 90, 90, 90);
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);

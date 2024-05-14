@@ -1,10 +1,11 @@
-use crate::constants::obtener_nombre_lenguaje;
+use crate::constants::{obtener_nombre_lenguaje, reserved_words, Lenguaje};
 use crate::explorer;
 use crate::file::{format_permissions, Archivo};
 use ncurses::*;
 
 const START_X: i32 = 5; // x=0 in the editor
 const START_Y: i32 = 1; // y=0 in the editor
+const MY_GLOBAL_VEC: [&str; 4] = ["pub", "fn", "let", "for"];
 
 #[derive(Debug)]
 pub struct State {
@@ -20,6 +21,8 @@ pub struct State {
     pub start: i32,
     pub end: i32,
     pub explorer: explorer::Explorer,
+    pub lang: Lenguaje,
+    pub reserved: Vec<String>,
 }
 
 impl State {
@@ -35,18 +38,23 @@ impl State {
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
-        init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
+        init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
         let end = h - 5;
 
         let win = newwin(h, w, 0, 0);
-        let mut explorer = explorer::Explorer::new(&path.into());
+        let p = path.into();
+        let mut explorer = explorer::Explorer::new(&p);
         explorer.get_files().expect("EXPLORER CANT READ DIRS");
+        let file = p.split("/").last().unwrap();
+        let lengauaje = file.split(".").last().unwrap();
+        let lang = obtener_nombre_lenguaje(lengauaje).unwrap();
+        let reserved = reserved_words(&lang);
 
         State {
-            archivo: Archivo::new(&path.into()),
+            archivo: Archivo::new(&p),
             w,
             h,
             win,
@@ -58,6 +66,8 @@ impl State {
             start: 0,
             end,
             explorer,
+            lang,
+            reserved,
         }
     }
 
@@ -70,47 +80,67 @@ impl State {
         mvwprintw(self.win, 0, 1, &self.archivo.path);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
 
-        for (_idx, i) in (self.start..self.end + self.start).enumerate() {
-            if i > (self.archivo.buffer.len() - 1) as i32 {
-                break;
+        if self.lang == Lenguaje::Undefined {
+            for (_idx, i) in (self.start..self.end + self.start).enumerate() {
+                if i > (self.archivo.buffer.len() - 1) as i32 {
+                    break;
+                }
+
+                let format = if i < 10 {
+                    format!(
+                        "{}     ",
+                        self.archivo.buffer[i as usize]
+                            .iter()
+                            .cloned()
+                            .collect::<String>()
+                    )
+                } else if i < 100 {
+                    format!(
+                        "{}    ",
+                        self.archivo.buffer[i as usize]
+                            .iter()
+                            .cloned()
+                            .collect::<String>()
+                    )
+                } else if i < 1000 {
+                    format!(
+                        "{}   ",
+                        self.archivo.buffer[i as usize]
+                            .iter()
+                            .cloned()
+                            .collect::<String>()
+                    )
+                } else {
+                    self.archivo.buffer[i as usize]
+                        .iter()
+                        .collect::<String>()
+                        .to_string()
+                };
+
+                mvwprintw(self.win, (_idx + 1) as i32, 1, &i.to_string());
+                mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
             }
-
-            let format = if i < 10 {
-                format!(
-                    "{}     ",
-                    self.archivo.buffer[i as usize]
-                        .iter()
-                        .cloned()
-                        .collect::<String>()
-                )
-            } else if i < 100 {
-                format!(
-                    "{}    ",
-                    self.archivo.buffer[i as usize]
-                        .iter()
-                        .cloned()
-                        .collect::<String>()
-                )
-            } else if i < 1000 {
-                format!(
-                    "{}   ",
-                    self.archivo.buffer[i as usize]
-                        .iter()
-                        .cloned()
-                        .collect::<String>()
-                )
-            } else {
-                self.archivo.buffer[i as usize]
-                    .iter()
-                    .cloned()
-                    .collect::<String>()
-                    .to_string()
-            };
-
-            wattron(self.win, COLOR_PAIR(3));
-            mvwprintw(self.win, (_idx + 1) as i32, 1, &i.to_string());
-            wattroff(self.win, COLOR_PAIR(3));
-            mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
+        } else {
+            for (_idx, i) in (self.start..self.end + self.start).enumerate() {
+                if i > (self.archivo.buffer.len() - 1) as i32 {
+                    break;
+                }
+                let v: String = self.archivo.buffer[i as usize].iter().collect();
+                let sp: Vec<_> = v.split(" ").collect();
+                let mut counter = 0;
+                for (_ia, &v) in sp.iter().enumerate() {
+                    if self.reserved.contains(&v.to_string()) {
+                        wattron(self.win, COLOR_PAIR(5) | A_BOLD());
+                        mvwprintw(self.win, (_idx + 1) as i32, counter + START_X, v);
+                        wattroff(self.win, COLOR_PAIR(5) | A_BOLD());
+                    } else {
+                        mvwprintw(self.win, (_idx + 1) as i32, counter + START_X, v);
+                    }
+                    counter += v.len() as i32 + 1;
+                    let f = format!("{}", i);
+                    mvwprintw(self.win, (_idx + 1) as i32, 1, &f);
+                }
+            }
         }
 
         self.display_bar();

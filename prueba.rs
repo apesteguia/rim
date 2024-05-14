@@ -1,19 +1,3 @@
-osfsf
-sfs
-asdfa
-sdf
-as
-f
-asd
-f
-asd
-f
-asd
-f
-
-
-
-
-
-
-
+pub fn main() {
+    let a = 1;
+}

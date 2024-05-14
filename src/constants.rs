@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Lenguaje {
     Rust,
     Elixir,
@@ -50,5 +50,43 @@ pub fn obtener_nombre_lenguaje(codigo: &str) -> Option<Lenguaje> {
         "php" => Some(Lenguaje::Php),
         "rb" => Some(Lenguaje::Ruby),
         _ => Some(Lenguaje::Undefined),
+    }
+}
+
+pub fn reserved_words(l: &Lenguaje) -> Vec<String> {
+    match l {
+        Lenguaje::Rust => vec![
+            "as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn",
+            "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref",
+            "return", "Self", "self", "static", "struct", "super", "trait", "true", "type",
+            "unsafe", "use", "where", "while", "async", "await", "dyn", "None", "Ok", "Some",
+            "Option", "Result", "Err",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect(),
+
+        // Agrega más palabras reservadas para otros lenguajes aquí
+        Lenguaje::Python => vec![
+            "False", "def", "if", "raise", "None", "del", "import", "return", "True", "elif", "in",
+            "try", "and", "else", "is", "while", "as", "except", "lambda", "with", "assert",
+            "finally", "nonlocal", "yield", "break", "for", "not", "class", "from", "or",
+            "continue", "global", "pass",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect(),
+
+        Lenguaje::C => vec![
+            "auto", "else", "if", "bread", "case", "char", "const", "continue", "deafult", "do",
+            "double", "enum", "extern", "float", "for", "goto", "int", "long", "register",
+            "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef",
+            "union", "unsigned", "void", "continue", "while", "volatile",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect(),
+
+        _ => Vec::new(),
     }
 }

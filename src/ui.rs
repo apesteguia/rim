@@ -35,6 +35,7 @@ impl State {
         init_pair(1, COLOR_BLACK, COLOR_WHITE);
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        init_pair(5, COLOR_WHITE, COLOR_MAGENTA);
 
         let w = getmaxx(stdscr());
         let h = getmaxy(stdscr());
@@ -124,8 +125,50 @@ impl State {
         let lenguaje = file.split('.').last().unwrap();
         let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
 
+        let fmt_right = format!("{} {}KB", per, metadata.len());
+        let fmt_left = format!(
+            "UNIX  UTF-8  {:?}  {}:{}",
+            lang,
+            self.idx_y,
+            self.archivo.buffer.len()
+        );
+
+        let x = getmaxx(self.win);
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+        mvwhline(self.win, self.h - 3, 1, 32, x - 2);
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+        if !self.mode {
+            wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+            mvwprintw(self.win, self.h - 3, 2, "NORMAL");
+            wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+        } else {
+            wattron(self.win, COLOR_PAIR(1) | A_BOLD());
+            mvwprintw(self.win, self.h - 3, 2, "INSERT");
+            wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
+        }
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
+        mvwprintw(self.win, self.h - 3, 10, &fmt_right);
+        mvwprintw(
+            self.win,
+            self.h - 3,
+            self.w - fmt_left.len() as i32 - 10,
+            &fmt_left,
+        );
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
+        wmove(self.win, self.y, self.x);
+        wrefresh(self.win);
+    }
+
+    pub fn display_bar_debug(&self) {
+        let metadata = self.archivo.file.metadata().unwrap();
+        let per = format_permissions(metadata.permissions(), false);
+
+        let file = self.archivo.path.split('/').last().unwrap();
+        let lenguaje = file.split('.').last().unwrap();
+        let lang = obtener_nombre_lenguaje(lenguaje).unwrap();
+
         let format = format!(
-            "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{} realy:{}",
+            "{:?} {}  {}KB  {}:{}  x:{} y:{} realx:{}   realy:{}",
             lang,
             per,
             metadata.len(),
@@ -140,11 +183,17 @@ impl State {
         let x = getmaxx(self.win);
         wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwhline(self.win, self.h - 3, 1, 32, x - 2);
+        wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
         if !self.mode {
+            wattron(self.win, COLOR_PAIR(2) | A_BOLD());
             mvwprintw(self.win, self.h - 3, 2, "NORMAL");
+            wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
         } else {
+            wattron(self.win, COLOR_PAIR(1) | A_BOLD());
             mvwprintw(self.win, self.h - 3, 2, "INSERT");
+            wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
         }
+        wattron(self.win, COLOR_PAIR(2) | A_BOLD());
         mvwprintw(self.win, self.h - 3, 10, &format);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
         wmove(self.win, self.y, self.x);

@@ -76,3 +76,8 @@ pub fn format_permissions(permissions: fs::Permissions, is_directory: bool) -> S
         other_execute
     )
 }
+
+pub fn is_file(path: impl AsRef<str>) -> bool {
+    let path = std::path::Path::new(path.as_ref());
+    path.is_file()
+}

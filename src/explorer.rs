@@ -1,3 +1,4 @@
+use crate::file::is_file;
 use ncurses::*;
 use std::fs;
 
@@ -52,6 +53,7 @@ impl Explorer {
                 .to_str()
                 .expect("FAILED CONVERT TO STRING")
                 .to_string();
+        } else if !is_file(&p) {
         } else {
             if let Ok(current_dir) = std::env::current_dir() {
                 let file_path = current_dir.join(p);

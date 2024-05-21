@@ -5,10 +5,25 @@ use std::fs;
 const START_X: i32 = 1;
 const START_Y: i32 = 1;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Dir {
+    pub path: String,
+    pub isfile: bool,
+}
+
+impl Dir {
+    pub fn new(path: impl Into<String>, isfile: bool) -> Self {
+        Self {
+            path: path.into(),
+            isfile,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Explorer {
     pub path: String,
-    pub dirs: Vec<String>,
+    pub dirs: Vec<Dir>,
     pub w: i32,
     pub h: i32,
     pub win: WINDOW,
@@ -155,26 +170,14 @@ impl Explorer {
         mvwprintw(self.win, 0, 1, &self.path);
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
 
-        // for (i, v) in self.dirs.iter().enumerate() {
-        //     if (i as i32) < self.h - 2 {
-        //         if self.selected == i {
-        //             wattron(self.win, COLOR_PAIR(1) | A_BOLD());
-        //             mvwprintw(self.win, i as i32 + self.y, self.x, v);
-        //             wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
-        //         } else {
-        //             mvwprintw(self.win, i as i32 + self.y, self.x, v);
-        //         }
-        //     }
-        // }
-
         let mut counter = 0;
         for i in self.selected..self.dirs.len() {
             if self.selected == i {
                 wattron(self.win, COLOR_PAIR(1) | A_BOLD());
-                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i]);
+                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i].path);
                 wattroff(self.win, COLOR_PAIR(1) | A_BOLD());
             } else {
-                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i]);
+                mvwprintw(self.win, counter + self.y, self.x, &self.dirs[i].path);
             }
             counter += 1;
         }
@@ -194,13 +197,37 @@ impl Explorer {
                         self.selected += 1;
                     }
                 }
+                108 => {
+                    if !self.dirs[self.selected].isfile {
+                        let mut p = std::path::PathBuf::from(&self.path);
+                        p.push(&self.dirs[self.selected].path);
+                        self.path = p.to_str().unwrap().to_string();
+                        self.dirs.clear();
+                        self.get_files().unwrap();
+                    }
+                }
+                104 => {
+                    let p = std::path::PathBuf::from(&self.path);
+                    let parent = p.parent();
+                    match parent {
+                        Some(parent) => {
+                            self.path = parent.to_str().unwrap().to_string();
+                            self.dirs.clear();
+                            self.get_files().unwrap();
+                        }
+                        None => (),
+                    }
+                }
+
                 107 => {
                     if self.selected > 0 {
                         self.selected -= 1;
                     }
                 }
                 KEY_ENTER | 10 | 111 => {
-                    return Some(self.dirs[self.selected].clone());
+                    if self.dirs[self.selected].isfile {
+                        return Some(self.dirs[self.selected].path.clone());
+                    }
                 }
                 _ => {
                     self.x += 0;
@@ -225,13 +252,36 @@ impl Explorer {
                         self.selected += 1;
                     }
                 }
+                108 => {
+                    if !self.dirs[self.selected].isfile {
+                        let mut p = std::path::PathBuf::from(&self.path);
+                        p.push(&self.dirs[self.selected].path);
+                        self.path = p.to_str().unwrap().to_string();
+                        self.dirs.clear();
+                        self.get_files().unwrap();
+                    }
+                }
+                104 => {
+                    let p = std::path::PathBuf::from(&self.path);
+                    let parent = p.parent();
+                    match parent {
+                        Some(parent) => {
+                            self.path = parent.to_str().unwrap().to_string();
+                            self.dirs.clear();
+                            self.get_files().unwrap();
+                        }
+                        None => (),
+                    }
+                }
                 107 => {
                     if self.selected > 0 {
                         self.selected -= 1;
                     }
                 }
                 KEY_ENTER | 10 | 111 => {
-                    return Some(self.dirs[self.selected].clone());
+                    if self.dirs[self.selected].isfile {
+                        return Some(self.dirs[self.selected].path.clone());
+                    }
                 }
                 _ => {
                     self.x += 0;
@@ -250,8 +300,10 @@ impl Explorer {
         for entry in paths {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() {
-                self.dirs.push(path.display().to_string());
+            if path.is_dir() {
+                self.dirs.push(Dir::new(path.display().to_string(), false));
+            } else {
+                self.dirs.push(Dir::new(path.display().to_string(), true));
             }
         }
         Ok(())

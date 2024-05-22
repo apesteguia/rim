@@ -1,6 +1,7 @@
 pub mod constants;
 pub mod explorer;
 pub mod file;
+pub mod msg;
 pub mod ui;
 
 use std::env;

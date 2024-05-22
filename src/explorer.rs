@@ -1,4 +1,7 @@
-use crate::file::is_file;
+use crate::{
+    file::is_file,
+    msg::{Msg, MsgType},
+};
 use ncurses::*;
 use std::fs;
 
@@ -34,6 +37,7 @@ pub struct Explorer {
     pub idx_y: i32,
     pub start: i32,
     pub end: i32,
+    pub msg: Msg,
 }
 
 impl Explorer {
@@ -93,6 +97,7 @@ impl Explorer {
             idx_y: 0,
             start: 0,
             end: max_height - 5,
+            msg: Msg::new(win, "", MsgType::Info),
         }
     }
 
@@ -110,6 +115,7 @@ impl Explorer {
         init_pair(2, COLOR_WHITE, COLOR_BLUE);
         init_pair(3, COLOR_BLUE, COLOR_BLACK);
         init_pair(4, COLOR_RED, COLOR_BLACK);
+        init_pair(5, COLOR_BLACK, COLOR_RED);
 
         let max_width = getmaxx(stdscr());
         let max_height = getmaxy(stdscr());
@@ -159,6 +165,7 @@ impl Explorer {
             idx_y: 0,
             start: 0,
             end: max_height - 5,
+            msg: Msg::new(win, "", MsgType::Info),
         }
     }
 
@@ -182,6 +189,7 @@ impl Explorer {
             counter += 1;
         }
 
+        self.msg.display(1, self.h - 2);
         wrefresh(self.win);
     }
 
@@ -198,6 +206,7 @@ impl Explorer {
                     }
                 }
                 108 => {
+                    self.selected = 0;
                     if !self.dirs[self.selected].isfile {
                         let mut p = std::path::PathBuf::from(&self.path);
                         p.push(&self.dirs[self.selected].path);
@@ -207,6 +216,7 @@ impl Explorer {
                     }
                 }
                 104 => {
+                    self.selected = 0;
                     let p = std::path::PathBuf::from(&self.path);
                     let parent = p.parent();
                     match parent {
@@ -215,7 +225,9 @@ impl Explorer {
                             self.dirs.clear();
                             self.get_files().unwrap();
                         }
-                        None => (),
+                        None => {
+                            self.msg.update("Can't acces dir", MsgType::Error);
+                        }
                     }
                 }
 
@@ -260,8 +272,10 @@ impl Explorer {
                         self.dirs.clear();
                         self.get_files().unwrap();
                     }
+                    self.selected = 0;
                 }
                 104 => {
+                    self.selected = 0;
                     let p = std::path::PathBuf::from(&self.path);
                     let parent = p.parent();
                     match parent {
@@ -270,7 +284,7 @@ impl Explorer {
                             self.dirs.clear();
                             self.get_files().unwrap();
                         }
-                        None => (),
+                        None => self.msg.update("Can't acces dir", MsgType::Error),
                     }
                 }
                 107 => {
@@ -296,15 +310,25 @@ impl Explorer {
     }
 
     pub fn get_files(&mut self) -> Result<(), std::io::Error> {
-        let paths = fs::read_dir(&self.path)?;
-        for entry in paths {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_dir() {
-                self.dirs.push(Dir::new(path.display().to_string(), false));
-            } else {
-                self.dirs.push(Dir::new(path.display().to_string(), true));
+        let paths = fs::read_dir(&self.path);
+        match paths {
+            Ok(paths) => {
+                for entry in paths {
+                    let entry = entry;
+                    match entry {
+                        Ok(entry) => {
+                            let path = entry.path();
+                            if path.is_dir() {
+                                self.dirs.push(Dir::new(path.display().to_string(), false));
+                            } else {
+                                self.dirs.push(Dir::new(path.display().to_string(), true));
+                            }
+                        }
+                        Err(err) => return Err(err),
+                    }
+                }
             }
+            Err(err) => self.msg.update(err.to_string(), MsgType::Error),
         }
         Ok(())
     }

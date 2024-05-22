@@ -96,6 +96,9 @@ impl State {
         wattroff(self.win, COLOR_PAIR(2) | A_BOLD());
 
         if self.lang == Lenguaje::Undefined {
+            for (idx, _i) in (self.start..self.end + self.start).enumerate() {
+                mvwprintw(self.win, (idx + 1) as i32, 1, "~");
+            }
             for (_idx, i) in (self.start..self.end + self.start).enumerate() {
                 if i > (self.archivo.buffer.len() - 1) as i32 {
                     break;
@@ -136,6 +139,10 @@ impl State {
                 mvwprintw(self.win, (_idx + 1) as i32, START_X, &format);
             }
         } else {
+            for (idx, _i) in (self.start..self.end + self.start).enumerate() {
+                mvwprintw(self.win, (idx + 1) as i32, 1, "~");
+            }
+
             for (_idx, i) in (self.start..self.end + self.start).enumerate() {
                 if i > (self.archivo.buffer.len() - 1) as i32 {
                     break;
@@ -419,7 +426,7 @@ impl State {
         self.idx_x = 0;
         self.x = START_X;
 
-        if self.idx_y < self.archivo.buffer.len() - 1 && self.archivo.buffer.len() as i32 > self.h {
+        if self.idx_y < self.archivo.buffer.len() && self.archivo.buffer.len() as i32 > self.h {
             self.start += 1;
         } else {
             self.y += 1;

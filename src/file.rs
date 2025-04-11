@@ -47,7 +47,6 @@ impl Archivo {
 
 pub fn format_permissions(permissions: fs::Permissions, is_directory: bool) -> String {
     let mode = permissions.mode();
-
     let file_type_char = if is_directory { 'd' } else { '-' };
 
     let owner_read = if mode & 0o400 != 0 { 'r' } else { '-' };
